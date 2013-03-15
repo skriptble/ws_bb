@@ -54,15 +54,13 @@ include_once 'ws_bb.features.inc';
  */
 function ws_bb_blueprint_processor(stdClass $blueprint, $base_directory, $site_name, $menu_name) {
   module_load_include('inc', 'ws_bb', 'inc/ws_bb.parser');
-  dpm($blueprint);
   $blueprint_parser = new Blueprint_Parser();
   $blueprint_parser->parse($blueprint);
   $blueprint_parser->sitemap_converter($blueprint_parser->entries, $base_directory, $site_name, $menu_name);
-  dpm(file_create_url($blueprint_parser->xml_file));
   ws_bb_blueprint_node_create($blueprint, $blueprint_parser->xml_file, $site_name);
-  drupal_set_message('The XML Blueprint has been successfully created!');
   $link = l($site_name, "content/blueprints/$site_name");
-  drupal_set_message(t('Import your content: ' . $link));
+  drupal_set_message(t('Your site has successfully been built.'));
+  drupal_set_message(t('A node has been created with a link to the xml file used to create this site. If you need to reimport or delete the created content, you may also use the following link: ' . $link));
 }
 
 /**
@@ -71,15 +69,7 @@ function ws_bb_blueprint_processor(stdClass $blueprint, $base_directory, $site_n
  *
  */
 function ws_bb_blueprint_node_create(stdClass $blueprint, $xml_path, $site_name) {
-  drupal_set_message('Create A Node!');
-  /**
-* Basic Node Creation Example for Drupal 7
-*
-* This example:
-* - Assumes a standard Drupal 7 installation
-* - Does not verify that the field values are correct
-*/
-  
+
   $node = new stdClass();
   $node->type = 'site_blueprint';
   node_object_prepare($node);
@@ -94,5 +84,5 @@ function ws_bb_blueprint_node_create(stdClass $blueprint, $xml_path, $site_name)
 
   node_save($node);
   
-  return 'Node Created!';
+  return;
 }
