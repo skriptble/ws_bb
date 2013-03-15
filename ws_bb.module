@@ -1,0 +1,98 @@
+<?php
+/**
+ * @file
+ *  Main module file for the Web Services Blueprint & Build tool.
+ */
+
+/**
+ * Implements hook_menu
+ */
+function ws_bb_menu() {
+  $items = array();
+  $items['ws/blueprintbuild/extract'] = array(
+      'title' => 'Extract new blueprint',
+      'page callback' => 'ws_bb_extract_page',
+      'access arguments' => array(1),
+      'file' => 'inc/ws_bb.extraction.inc',
+    );
+
+  return $items;
+}
+
+function ws_bb_theme($existing, $type, $theme, $path) {
+  return array(
+    'ws_bb_extract' => array(
+      'render element' => 'elements',
+      'template' => 'ws_bb_extract',
+      'path' => drupal_get_path('module', 'ws_bb') . "/templates",
+    ),         
+  );
+}
+
+/**
+ * Code for the Blueprint & Build feature.
+ */
+include_once 'ws_bb.features.inc';
+
+/**
+ * Processes a blueprint into an XML file
+ *
+ *
+ * @param stdClass $blueprint
+ *  A blueprint object which contains a uri property
+ *
+ * @param $base_directory
+ *  The directory of the unarchived blueprint directory
+ *
+ * @param $site_name
+ *  The name of the site, taken from the name of the directory that contains all of the
+ *  Blueprint files. This is used as part of the XML file's name
+ *
+ * @menu_name
+ *  The name of the menu which all of the pages should be included in.
+ *
+ */
+function ws_bb_blueprint_processor(stdClass $blueprint, $base_directory, $site_name, $menu_name) {
+  module_load_include('inc', 'ws_bb', 'inc/ws_bb.parser');
+  dpm($blueprint);
+  $blueprint_parser = new Blueprint_Parser();
+  $blueprint_parser->parse($blueprint);
+  $blueprint_parser->sitemap_converter($blueprint_parser->entries, $base_directory, $site_name, $menu_name);
+  dpm(file_create_url($blueprint_parser->xml_file));
+  ws_bb_blueprint_node_create($blueprint, $blueprint_parser->xml_file, $site_name);
+  drupal_set_message('The XML Blueprint has been successfully created!');
+  $link = l($site_name, "content/blueprints/$site_name");
+  drupal_set_message(t('Import your content: ' . $link));
+}
+
+/**
+ * Create a new Feed Importer node for the created XML
+ *
+ *
+ */
+function ws_bb_blueprint_node_create(stdClass $blueprint, $xml_path, $site_name) {
+  drupal_set_message('Create A Node!');
+  /**
+* Basic Node Creation Example for Drupal 7
+*
+* This example:
+* - Assumes a standard Drupal 7 installation
+* - Does not verify that the field values are correct
+*/
+  
+  $node = new stdClass();
+  $node->type = 'site_blueprint';
+  node_object_prepare($node);
+  
+  $node->title    = $site_name;
+  $node->language = LANGUAGE_NONE;
+
+  $node->feeds['FeedsHTTPFetcher']['source'] = file_create_url($xml_path);
+  
+  $path = 'content/blueprints/' . $site_name;
+  $node->path = array('alias' => $path);
+
+  node_save($node);
+  
+  return 'Node Created!';
+}
